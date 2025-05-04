@@ -1,0 +1,267 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe vs Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+       
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+       
+        .game-container {
+            text-align: center;
+        }
+       
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+       
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: white;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+       
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+       
+        .status {
+            font-size: 24px;
+            margin-bottom: 20px;
+            height: 30px;
+        }
+       
+        .reset-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+       
+        .reset-btn:hover {
+            background-color: #45a049;
+        }
+       
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Tic Tac Toe vs Bot</h1>
+        <div class="status" id="status">Your turn (X)</div>
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button class="reset-btn hidden" id="resetBtn">Play Again</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('board');
+            const cells = document.querySelectorAll('.cell');
+            const status = document.getElementById('status');
+            const resetBtn = document.getElementById('resetBtn');
+           
+            // Human is X, Bot is O
+            const HUMAN_PLAYER = 'X';
+            const BOT_PLAYER = 'O';
+            let currentPlayer = HUMAN_PLAYER;
+            let gameState = ['', '', '', '', '', '', '', '', ''];
+            let gameActive = true;
+           
+            const winningConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+                [0, 4, 8], [2, 4, 6]             // diagonals
+            ];
+           
+            // Initialize the game
+            function initGame() {
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.addEventListener('click', handleCellClick);
+                });
+                resetBtn.classList.add('hidden');
+                gameActive = true;
+                currentPlayer = HUMAN_PLAYER;
+                gameState = ['', '', '', '', '', '', '', '', ''];
+                status.textContent = "Your turn (X)";
+            }
+           
+            // Handle cell click
+            function handleCellClick(e) {
+                const clickedCell = e.target;
+                const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+               
+                if (gameState[clickedCellIndex] !== '' || !gameActive || currentPlayer !== HUMAN_PLAYER) {
+                    return;
+                }
+               
+                // Human makes move
+                makeMove(clickedCellIndex, HUMAN_PLAYER);
+               
+                // Check if game continues
+                if (gameActive) {
+                    currentPlayer = BOT_PLAYER;
+                    status.textContent = "Bot thinking...";
+                   
+                    // Bot makes move after a short delay
+                    setTimeout(() => {
+                        const botMove = findBestMove();
+                        makeMove(botMove, BOT_PLAYER);
+                        currentPlayer = HUMAN_PLAYER;
+                        status.textContent = "Your turn (X)";
+                    }, 500);
+                }
+            }
+           
+            // Make a move on the board
+            function makeMove(index, player) {
+                gameState[index] = player;
+                cells[index].textContent = player;
+                checkResult();
+            }
+           
+            // Check for win or draw
+            function checkResult() {
+                let roundWon = false;
+               
+                for (let i = 0; i < winningConditions.length; i++) {
+                    const [a, b, c] = winningConditions[i];
+                    if (gameState[a] === '' || gameState[b] === '' || gameState[c] === '') {
+                        continue;
+                    }
+                    if (gameState[a] === gameState[b] && gameState[b] === gameState[c]) {
+                        roundWon = true;
+                        break;
+                    }
+                }
+               
+                if (roundWon) {
+                    if (currentPlayer === HUMAN_PLAYER) {
+                        status.textContent = "You win!";
+                    } else {
+                        status.textContent = "Bot wins!";
+                    }
+                    gameActive = false;
+                    resetBtn.classList.remove('hidden');
+                    return;
+                }
+               
+                if (!gameState.includes('')) {
+                    status.textContent = "Game ended in a draw!";
+                    gameActive = false;
+                    resetBtn.classList.remove('hidden');
+                    return;
+                }
+            }
+           
+            // Simple AI - finds first empty spot
+            function findBestMove() {
+                // Check for winning move for bot
+                for (let i = 0; i < gameState.length; i++) {
+                    if (gameState[i] === '') {
+                        gameState[i] = BOT_PLAYER;
+                        if (checkBotWin()) {
+                            gameState[i] = '';
+                            return i;
+                        }
+                        gameState[i] = '';
+                    }
+                }
+               
+                // Block human's winning move
+                for (let i = 0; i < gameState.length; i++) {
+                    if (gameState[i] === '') {
+                        gameState[i] = HUMAN_PLAYER;
+                        if (checkHumanWin()) {
+                            gameState[i] = '';
+                            return i;
+                        }
+                        gameState[i] = '';
+                    }
+                }
+               
+                // Take center if available
+                if (gameState[4] === '') return 4;
+               
+                // Take a random corner
+                const corners = [0, 2, 6, 8];
+                const availableCorners = corners.filter(index => gameState[index] === '');
+                if (availableCorners.length > 0) {
+                    return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+                }
+               
+                // Take any available spot
+                const availableSpots = gameState.map((val, idx) => val === '' ? idx : null).filter(val => val !== null);
+                return availableSpots[Math.floor(Math.random() * availableSpots.length)];
+            }
+           
+            function checkBotWin() {
+                for (let i = 0; i < winningConditions.length; i++) {
+                    const [a, b, c] = winningConditions[i];
+                    if (gameState[a] === BOT_PLAYER && gameState[b] === BOT_PLAYER && gameState[c] === BOT_PLAYER) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+           
+            function checkHumanWin() {
+                for (let i = 0; i < winningConditions.length; i++) {
+                    const [a, b, c] = winningConditions[i];
+                    if (gameState[a] === HUMAN_PLAYER && gameState[b] === HUMAN_PLAYER && gameState[c] === HUMAN_PLAYER) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+           
+            // Reset button event
+            resetBtn.addEventListener('click', initGame);
+           
+            // Start the game
+            initGame();
+        });
+    </script>
+</body>
+</html>
